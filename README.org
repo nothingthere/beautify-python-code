@@ -1,0 +1,498 @@
+# Author: Claudio <3261958605@qq.com>
+# Created: 2017-06-12 14:55:10
+# Commentary:
+
+#+TITLE: [[https://www.youtube.com/watch?v%3DOSGv2VnC0go&t%3D1785s][Python代码优化]]
+
+- When you see this, do that instead!
+
+  - Replace traditional index manipulation with Python's core looping idiom
+
+  - Learn advanced techniques with for-else clauses and two arguments form of iter()
+
+  - Improve your craftmanship and aim for clean, fast idiomatic Python code
+
+* 迭代
+** 在数字范围内迭代
+   链表占内存，range()对象无论范围多大，内存不变。
+
+   #+BEGIN_SRC python :session
+     for i in [1, 2, 3, 4, 5]:
+         print(i**2)
+
+     # ==>
+
+     for i in range(1, 6):
+         print(i**2)
+   #+END_SRC
+
+** 替换索引
+
+   #+BEGIN_SRC python :session
+     colors = ['green', 'blue', 'yellow', 'black']
+
+     for i in range(len(colors)):
+         print(colors[i])
+
+     # ==>  更简单、易读，更快
+
+     for color in colors:
+         print(color)
+   #+END_SRC
+
+** 逆序
+
+   #+BEGIN_SRC python :session
+     colors = ['green', 'blue', 'yellow', 'black']
+
+     for i in range(len(colors) - 1, -1, -1):
+         print(colors[i])
+
+     # ==>更快，易读
+
+     for color in reversed(colors):
+         print(color)
+   #+END_SRC
+
+** 迭代时使用元素索引
+
+   #+BEGIN_SRC python :session
+     for i in range(len(colors)):
+         print(i, '--->', colors[i])
+
+     # ==>
+
+     for i, color in enumerate(colors):
+         print(i, '--->', color)
+   #+END_SRC
+
+** 同时迭代多个序列
+
+   #+BEGIN_SRC python :session
+     names = ['claudio', 'marco', 'diego']
+
+     n = min(len(names), len(colors))
+     for i in range(n):
+         print(name[i], '--->', colors[i])
+
+     # ==>
+
+     for name, color in zip(names, colors):
+         print(name, '--->', color)
+   #+END_SRC
+
+** 排序后迭代
+
+   #+BEGIN_SRC python :session
+     for color in sorted(colors):
+         print(color)
+
+     for color in sorted(colors, reverse=True):
+         print(color)
+   #+END_SRC
+
+*** 定制排序顺序
+
+    #+BEGIN_SRC python :session
+      def compare_length(c1, c2):
+          if len(c1) < len(c2):
+              return -1
+          if len(c1) > len(c2):
+              return 1
+          return 0
+
+      sorted(colors, cmp=compare_length)
+
+      # ==>
+
+      sorted(colors, key=len)
+    #+END_SRC
+
+** 调用函数直到某个特定值
+
+   #+BEGIN_SRC python :session
+     blocks = []
+
+     while True:
+         block = f.read(32)
+         if block == '':
+             break
+         blocks.append(block)
+
+     # ==>
+     import functools
+     for block in iter(functools.partial(f.read, 32), ''):
+         blocks.append(block)
+   #+END_SRC
+
+** 在序列中查找满足条件的值 for-else
+
+   #+BEGIN_SRC python :session
+     def find(seq, target):
+         found = False
+         for i, value in enumerate(seq):
+             if value == target:
+                 found = True
+                 break
+         if not found:
+             return -1
+         return i
+
+     # ==>
+
+     def find(seq, target):
+         for i, value in enumerate(seq):
+             if value == target:
+                 break
+         else:
+             return -1
+         return i
+   #+END_SRC
+
+* 字典
+** 迭代字典时删除元素
+
+   #+BEGIN_SRC python :session
+     d = {'matthew': 'blue', 'rachel': 'green', 'raymond': 'green'}
+     for k in d:
+         del d[k]
+
+     for k in d.keys():
+         if k.statswith('r'):
+             del d[k]
+
+     # ==>
+
+     d = {k: d[k] for k in d if not k.startswith('r')}
+     print(d)
+   #+END_SRC
+
+** 遍历value
+
+   #+BEGIN_SRC python :session
+     for k in d:
+         print(k, '--->', d[k])
+
+     # ==>
+     for k, v in d.items():
+         promt(k, '--->', v)
+   #+END_SRC
+
+** 将已有序列转换为字典
+
+   #+BEGIN_SRC python :session
+     names = ['raymond', 'rachel', 'matthew']
+     colors = ['green', 'blue', 'yellow']
+
+     dict(zip(names, colors))
+     dict(enumerate(names))
+   #+END_SRC
+
+** 利用字典计数序列中元素出现的个数
+
+   #+BEGIN_SRC python :session
+     import collections
+     colors = ['green', 'blue', 'yellow', 'green', 'blue']
+
+     d = {}
+     for color in colors:
+         if color not in d:
+             d[color] = 0
+         d[color] += 1
+
+     # ==>
+     d = {}
+     for color in colors:
+         d[color] = d.get(color, 0) + 1
+
+     # ==>
+     d = collections.defaultdict(int)
+     for color in colors:
+         d[color] += 1
+
+     # ==>
+     d = collections.Counter(colors)
+   #+END_SRC
+
+** 利用字典分组序列
+
+   #+BEGIN_SRC python :session
+     import collections
+     names = ['raymond', 'rachel', 'matthew', 'roger']
+
+     d = {}
+     for name in names:
+         key = len(name)
+         if key not in d:
+             d[key] = []
+         d[key].append(name)
+
+     # ==>
+
+     d = {}
+     for name in names:
+         key = len(name)
+         d.setdefault(key, []).append(name)
+
+     # ==>
+     d = collections.defaultdict(list)
+     for name in names:
+         key = len(name)
+         d[key].append(name)
+   #+END_SRC
+
+** 使用popitem()？？？
+   popitem is atomic so you don't have to put locks around it to use
+   it in threads.
+
+   #+BEGIN_SRC python :session
+     d = {'matthew': 'blue', 'rachel': 'green', 'raymond': 'red'}
+     while d:
+         key, valye = d.popitem()
+         print(key, '--->', value)
+   #+END_SRC
+
+** Linking dictionaries
+   利用ChainMap()定制。
+
+   #+BEGIN_SRC python :session
+     import collections
+     import argparse
+     import os
+
+     defaults = {'color': 'green', 'user': 'guest'}
+     parser = argparse.ArgumentParser()
+     parser.add_argument('-u', '--user')
+     parser.add_argument('-c', '--color')
+     namespace = parser.parse_args()
+     command_line_args = {k: v for k, v in vars(namespace).items() if v}
+     d = defaults.copy()
+     d.update(os.environ)
+     d.update(command_line_args)
+
+     # ==>
+
+     d = collections.ChainMap(command_line_args, os.environ, defaults)
+   #+END_SRC
+
+* 简明
+
+** 使用关键字参数
+
+   #+BEGIN_SRC python :session
+     twitter_search('@obama', False, 20, True)
+
+     # ==>
+
+     twitter_search('@obama', retweets=False, numtweets=20, popular=True)
+   #+END_SRC
+
+** 使用命名元组替换元组作为返回值
+
+   #+BEGIN_SRC python :session
+     from collections import namedtuple
+     doctest.testmode()
+     # 返回(0, 4)
+
+     # ==>
+
+     TestResults = namedtuple('TestResults', 'failed attempted')
+     doctest.testmode()
+     # 返回TestResults(failed=0, attempted=4)
+   #+END_SRC
+
+** 提取序列元素
+
+   #+BEGIN_SRC python :session
+     p = 'Raymond', 'Hettinger', 0x30, 'python@example.com'
+
+     fname = p[0]
+     lname = p[1]
+     age = p[2]
+     email = p[3]
+
+     # ==>
+     fname, lname, age, email = p
+   #+END_SRC
+** 更新多个状态变量
+
+   #+BEGIN_SRC python :session
+     def fabonacci(n):
+         x = 0
+         y = 1
+         for i in range(n):
+             print(x)
+             t = y
+             y = x + y
+             x = t
+
+     # ==>
+
+     def fibonacci(n):
+         x, y = 0, 1
+         for i in range(n):
+             print(x)
+             x, y = y, x + y
+   #+END_SRC
+
+** 模拟状态更新
+
+   #+BEGIN_SRC python :session
+     tmp_x = x + dx * t
+     tmp_y = y + dx * t
+     tmp_dx = influence(m, x, y, dx, dy, partial='x')
+     tmp_dy = influence(m, x, y, dx, dy, partial='y')
+     x = tmp_x
+     y = tmp_y
+     dx = tmp_dx
+     dy = tmp_dy
+   #+END_SRC
+
+** 使用Comprehension
+
+   #+BEGIN_SRC python :session
+     result = []
+     for i in range(10):
+         s = i**2
+         result.append(s)
+
+     # ==>
+
+     [i**2 for i in range(20)]
+   #+END_SRC
+
+* 效率
+** 拼接字符串
+
+   #+BEGIN_SRC python :session
+     names = ['raymond', 'rachel', 'matthew', 'roger',
+              'betty', 'melissa', 'judith', 'charlie']
+
+     s = names[0]
+     for name in names[1:]:
+         s += ', ' + name
+
+     # ==>
+     ', '.join(names)
+   #+END_SRC
+
+** 在链表首位增删元素
+
+   #+BEGIN_SRC python :session
+     names = ['raymond', 'rachel', 'matthew', 'roger',
+              'betty', 'melissa', 'judith', 'charlie']
+     names.pop(0)
+     names.insert(0, 'mark')
+
+     # ==>
+     from collections import deque
+
+     names = deque(['raymond', 'rachel', 'matthew', 'roger',
+                    'betty', 'melissa', 'judith', 'charlie'])
+
+     names.popleft()
+     names.appendleft('mark')
+   #+END_SRC
+
+** 使用缓存
+
+   #+BEGIN_SRC python :session
+     from functools import lru_cache
+     from urllib.request import urlopen
+
+     def web_lookup(url, saved={}):
+         if url in saved:
+             return saved[url]
+         page = urlopen(url).read()
+         saved[url] = page
+         return page
+
+     # ==>
+
+     @lru_cache(maxsize=128)
+     def web_lookup(url):
+         return urlopen(url).read()
+   #+END_SRC
+
+* 使用上下文管理器
+
+** 文件操作
+
+   #+BEGIN_SRC python :session
+     f = open('test.txt')
+
+     try:
+         data = f.read()
+     finally:
+         f.close()
+
+     # ==>
+     with open('test.txt') as f:
+         data = f.read()
+   #+END_SRC
+
+** 线程锁
+
+   #+BEGIN_SRC python :session
+     from threading import Lock
+     lock = Lock()
+
+     lock.acquire()
+     try:
+         print('Critical section 1')
+         print('Critical section 2')
+     finally:
+         lock.release()
+
+     # ==>
+     with lock:
+         print('Critical section 1')
+         print('Critical section 2')
+   #+END_SRC
+
+** 抑制错误抛出
+
+   #+BEGIN_SRC python :session
+     import contextlib
+     import os
+
+     try:
+         os.remove('somefile.tmp')
+     except OSError:
+         pass
+
+     # ==>
+     with contextlib.suppress(OSError):
+         os.remove('somefile.tmp')
+   #+END_SRC
+
+** 定制自己的上下文管理器
+
+   #+BEGIN_SRC python :session
+     import contextlib
+
+     @contextlib.contextmanager
+     def tag(name):
+         print('<{}>'.format(name))
+         yield
+         print('</{}>'.format(name))
+
+     with tag('div'):
+         print('content')
+   #+END_SRC
+
+** 暂时重定向
+
+   #+BEGIN_SRC python :session
+     import contextlib
+     import sys
+
+     @contextlib.contextmanager
+     def redirect_stdout(fileobj):
+         oldstdout = sys.stdout
+         sys.stdout = fileobj
+         try:
+             yield fileobj
+         finally:
+             sys.stdout = oldstdout
+   #+END_SRC
