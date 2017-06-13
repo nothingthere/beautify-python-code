@@ -2,7 +2,9 @@
 # Created: 2017-06-12 14:55:10
 # Commentary:
 
-#+TITLE: [[https://www.youtube.com/watch?v%3DOSGv2VnC0go&t%3D1785s][Python代码优化]]
+#+TITLE: Python代码优化
+
+[[https://www.youtube.com/watch?v%3DOSGv2VnC0go&t%3D1785s][@Raymond Hettinger]]
 
 - When you see this, do that instead!
 
@@ -376,7 +378,7 @@
      ', '.join(names)
    #+END_SRC
 
-** 在链表首位增删元素
+** 在链表首尾增删元素
 
    #+BEGIN_SRC python :session
      names = ['raymond', 'rachel', 'matthew', 'roger',
